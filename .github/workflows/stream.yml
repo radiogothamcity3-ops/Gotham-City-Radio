@@ -1,0 +1,30 @@
+name: 24/7 Gotham Radio Live Stream
+
+on:
+  schedule:
+    # Si riavvia automaticamente ogni 5 ore prima dello stop di sicurezza
+    - cron: '0 */5 * * *'
+  workflow_dispatch: # Permette l'avvio manuale
+
+jobs:
+  stream:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository code
+        uses: actions/checkout@v3
+
+      - name: Install FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Start Streaming to YouTube
+        env:
+          YOUTUBE_SECRET: ${{ secrets.YOUTUBE_STREAM_KEY }}
+        run: |
+          ffmpeg -re -loop 1 -i loop.mp4 \
+          -f concat -safe 0 -i playlist.txt \
+          -t 05:15:00 \
+          -c:v libx264 -preset ultrafast -b:v 2500k -maxrate 2500k -bufsize 5000k -pix_fmt yuv420p -g 60 \
+          -c:a aac -b:a 128k -ar 44100 \
+          -f flv "rtmp://a.rtmp.youtube.com/live2/$YOUTUBE_SECRET"
